@@ -1,0 +1,42 @@
+# generate tethering sites at rocksalt lattice positions with the appropriate "lattice constant" at each temperature
+# run a single step sim to generate sites 
+
+log rocksalt_lattice.log
+units metal
+atom_style charge
+boundary p p p
+
+# cation lattice
+lattice fcc ${lc}
+region box block 0 ${s} 0 ${s} 0 ${s}
+create_box 2 box
+create_atoms 1 box
+
+# anion lattice
+lattice fcc ${lc} origin 0.5 0.0 0.0
+create_atoms 2 box
+
+group Na type 1
+group Cl type 2
+
+mass 1 22.9898
+mass 2 35.4527
+
+set group Na charge 0
+set group Cl charge 0 # moot, we only need the lattice sites
+
+pair_style born/coul/dsf 0.25 9.0
+pair_coeff 1 1 0.263705848 0.317 2.340 1.048583006 -0.49932529
+pair_coeff 1 2 0.210964679 0.317 2.755 6.99055303  -8.675775756
+pair_coeff 2 2 0.158223509 0.317 3.170 72.40215779 -145.4284714 # moot
+
+thermo 1
+thermo_style custom step pe vol lx ly lz density press temp etotal enthalpy atoms
+thermo_modify norm yes
+
+velocity all create 1. 1344
+timestep 0.002
+
+fix 0 all nve
+run 0
+write_data rocksalt_lattice.data nocoeff

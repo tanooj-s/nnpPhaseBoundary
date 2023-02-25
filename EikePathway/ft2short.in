@@ -1,0 +1,47 @@
+# TI script to scale down Fumi-Tosi interactions (run at a single lambda point), step 2 along pathway
+
+
+units metal
+atom_style charge
+boundary p p p
+
+log ${lambda}.ft2short.log
+read_data ${startfile}
+
+variable lam equal ${lambda}
+variable opp equal 1-${lam}
+variable et equal ${eta}
+variable scale equal 1-v_lam*(1-v_et) # scale factor to pass into hybrid/scaled
+
+group Na type 1
+group Cl type 2
+
+mass 1 22.9898
+mass 2 35.4527
+set group Na charge +1.
+set group Cl charge -1.
+
+pair_style hybrid/scaled v_scale born/coul/dsf 0.25 9.0 
+pair_coeff 1 1 born/coul/dsf 0.2637 0.317 2.340 1.048553 -0.49935 # Na-Na
+pair_coeff 1 2 born/coul/dsf 0.21096 0.317 2.755 6.99055303 -8.6757 # Cl Na
+pair_coeff 2 2 born/coul/dsf 0.158221 0.327 3.170 75.0544 -150.7325 #	Cl-Cl  	
+pair_modify tail yes	
+
+compute	fumi all pair born/coul/dsf epair 
+variable dUdl equal c_fumi*(v_et-1) 					
+variable nAll equal count(all)
+variable tdf equal v_dUdl/v_nAll # thermodynamic driving force, per atom dU/dlam value needed for free energy computation
+
+velocity all create ${T} ${seed}
+timestep 0.001
+
+thermo 100
+thermo_style custom step temp etotal pe atoms vol lx ly lz press enthalpy c_fumi v_et v_lam v_opp v_scale v_dUdl v_tdf fmax
+thermo_modify norm no
+
+fix 1 all nvt temp ${T} ${T} $(40*dt)
+run 10000
+write_data ${lambda}.ft2short.data nocoeff
+
+
+

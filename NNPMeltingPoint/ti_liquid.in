@@ -1,0 +1,41 @@
+# TI simulation to interpolate between NNP and Fumi-Tosi potentials
+
+log liquid/ti-${l}.log
+units metal
+atom_style charge
+boundary p p p
+
+variable lam equal ${l}
+variable opp equal 1-${l}
+
+read_data nn_liquid.data nocoeff
+
+pair_style hybrid/scaled v_lam born/coul/dsf 0.25 9.0 v_opp nn
+# Fumi-Tosi params
+pair_coeff 1 1 born/coul/dsf 0.263705848 0.317 2.340 1.048583006 -0.49932529
+pair_coeff 1 2 born/coul/dsf 0.210964679 0.317 2.755 6.99055303  -8.675775756	
+pair_coeff 2 2 born/coul/dsf 0.158223509 0.317 3.170 72.40215779 -145.4284714
+# NNP params
+pair_coeff * * nn ${pot} Na Cl
+
+
+compute fumi all pair born/coul/dsf epair
+compute nnp all pair nn epair
+
+variable dUdl equal c_fumi-c_nnp
+
+thermo 100
+thermo_style custom step v_lam pe c_fumi c_nnp v_dUdl vol press temp etotal
+thermo_modify norm no
+
+timestep 0.001
+velocity all create ${Tg}. ${seed}
+
+fix	0 all nvt temp ${Tg}. ${Tg}. $(40.0*dt)
+
+run 50000
+
+write_data liquid/ti-${l}.data
+
+
+

@@ -1,0 +1,35 @@
+# read in equilibrated Fumi-Tosi liquid configuration, deform to corresponding equilibrium solid volume at that temperature
+
+units metal
+atom_style charge
+boundary p p p
+log deform_liquid.log
+read_data fumi_liquid.data
+
+# Fumi-Tosi NaCl params
+pair_style born/coul/dsf 0.25 9.0
+pair_coeff 1 1 0.2637 0.317 2.340 1.048553 -0.49935 # Na-Na
+pair_coeff 1 2 0.21096 0.317 2.755 6.99055303 -8.6757 # Cl Na
+pair_coeff 2 2 0.158221 0.327 3.170 75.0544 -150.7325 #	Cl-Cl  
+pair_modify tail yes
+
+timestep 0.001
+thermo 100
+thermo_style custom step pe vol lx ly lz press atoms pxx pyy pzz temp etotal enthalpy atoms
+thermo_modify norm no
+
+velocity all create ${T} ${seed}
+
+# equilibrate NVT to get pressure estimate at liquid volume
+fix 0 all nvt temp ${T} ${T} $(40*dt)
+run 50000
+
+# deform to solid volume
+fix 1 all deform 1 x delta 0. ${delX} y delta 0. ${delY} z delta 0. ${delZ} # three delL values are the same for a cubic lattice
+run 50000
+unfix 1
+
+# obtain a pressure estimate at this new volume
+run 50000
+
+write_data deformed_liquid.data nocoeff

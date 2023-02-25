@@ -1,0 +1,31 @@
+# (de)compress liquid configuration to take Fumi-Tosi NaCl back to (Tg, P0)
+
+log liquid_press.log
+units metal
+atom_style charge
+boundary p p p
+read_data liquid/ti-1.0.data
+
+group Na type 1
+group Cl type 2
+mass 1 22.989800
+mass 2 35.452700
+set group Na charge +1
+set group Cl charge -1
+
+pair_style born/coul/dsf 0.25 9.0
+pair_coeff 1 1 0.263705848 0.317 2.340 1.048583006 -0.49932529
+pair_coeff 1 2 0.210964679 0.317 2.755 6.99055303  -8.675775756
+pair_coeff 2 2 0.158223509 0.317 3.170 72.40215779 -145.4284714
+
+timestep 0.002
+velocity all create ${Tg}. ${seed}
+
+thermo 100
+thermo_style custom step pe vol press temp etotal enthalpy
+thermo_modify norm no
+
+fix 0 all npt temp ${Tg}. ${Tg}. $(100.0*dt) iso ${P1}. ${P0}. $(200.0*dt)
+run 50000
+
+write_data liquid_press.data nocoeff

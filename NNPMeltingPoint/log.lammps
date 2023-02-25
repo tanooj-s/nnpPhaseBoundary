@@ -1,0 +1,62 @@
+LAMMPS (23 Jun 2022 - Update 1)
+# create a solid configuration of Fumi-Tosi NaCl at its known melting point (T0, P0)
+
+
+units metal
+atom_style charge
+boundary p p p
+
+# cation lattice
+lattice fcc 5.627
+Lattice spacing in x,y,z = 5.627 5.627 5.627
+region box block 0 ${size} 0 ${size} 0 ${size}
+region box block 0 6 0 ${size} 0 ${size}
+region box block 0 6 0 6 0 ${size}
+region box block 0 6 0 6 0 6
+create_box 2 box
+Created orthogonal box = (0 0 0) to (33.762 33.762 33.762)
+  1 by 1 by 1 MPI processor grid
+create_atoms 1 box
+Created 864 atoms
+  using lattice units in orthogonal box = (0 0 0) to (33.762 33.762 33.762)
+  create_atoms CPU = 0.000 seconds
+
+# anion lattice
+lattice fcc 5.627 origin 0.5 0.0 0.0
+Lattice spacing in x,y,z = 5.627 5.627 5.627
+create_atoms 2 box
+Created 864 atoms
+  using lattice units in orthogonal box = (0 0 0) to (33.762 33.762 33.762)
+  create_atoms CPU = 0.000 seconds
+
+group Na type 1
+864 atoms in group Na
+group Cl type 2
+864 atoms in group Cl
+
+mass 1 22.9898
+mass 2 35.4527
+set group Na charge +1
+Setting atom values ...
+  864 settings made for charge
+set group Cl charge -1
+Setting atom values ...
+  864 settings made for charge
+
+pair_style born/coul/dsf 0.25 9.0
+pair_coeff 1 1 0.263705848 0.317 2.340 1.048583006 -0.49932529
+pair_coeff 1 2 0.210964679 0.317 2.755 6.99055303  -8.675775756
+pair_coeff 2 2 0.158223509 0.317 3.170 72.40215779 -145.4284714
+#kspace_style ewald 1e-6
+
+timestep 0.002
+velocity all create ${T0}. ${seed}
+velocity all create 1100. ${seed}
+velocity all create 1100. 98987
+
+thermo 100
+thermo_style custom step pe vol density press temp etotal enthalpy
+thermo_modify norm no
+
+# equilibrate
+log fumi_solid.log
